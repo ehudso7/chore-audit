@@ -8,6 +8,8 @@
 export const TEST_WEBHOOK_SECRET = 'whsec_test_0123456789abcdef';
 
 Object.assign(process.env, {
+  // Pinned so the suite gives the same result whichever product CI is building.
+  PRODUCT: 'chore-audit',
   APP_URL: 'https://chore-audit.test',
   PRICE_CENTS: '1900',
   PRICE_CURRENCY: 'usd',

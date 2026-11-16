@@ -28,6 +28,7 @@ function problemsOf(env: Record<string, string | undefined>): readonly string[] 
 describe('parseConfig', () => {
   it('applies defaults for optional settings', () => {
     expect(parseConfig(valid)).toEqual({
+      productKey: 'chore-audit',
       appUrl: 'https://example.com',
       priceCents: 1900,
       currency: 'usd',
@@ -99,6 +100,35 @@ describe('parseConfig', () => {
   it('treats blank values as missing', () => {
     expect(problemsOf({ ...valid, SUPPORT_EMAIL: '   ' })).toEqual([
       'SUPPORT_EMAIL is required',
+    ]);
+  });
+});
+
+describe('product selection', () => {
+  it('sells the Chore Audit when PRODUCT is unset, so existing deployments are unchanged', () => {
+    const config = parseConfig(valid);
+    expect(config.productKey).toBe('chore-audit');
+    expect(config.priceCents).toBe(1900);
+  });
+
+  it('selects a product by key and applies that product\'s default price', () => {
+    const config = parseConfig({ ...valid, PRODUCT: 'anime-starter-pack' });
+    expect(config.productKey).toBe('anime-starter-pack');
+    expect(config.priceCents).toBe(900);
+  });
+
+  it('lets PRICE_CENTS override the product default', () => {
+    const config = parseConfig({
+      ...valid,
+      PRODUCT: 'anime-starter-pack',
+      PRICE_CENTS: '1200',
+    });
+    expect(config.priceCents).toBe(1200);
+  });
+
+  it('rejects an unknown product instead of silently selling the default', () => {
+    expect(problemsOf({ ...valid, PRODUCT: 'anime' })).toEqual([
+      'PRODUCT must be one of: chore-audit, anime-starter-pack',
     ]);
   });
 });

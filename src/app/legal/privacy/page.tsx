@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getConfig } from '@/lib/env';
-import { site } from '@/lib/site';
+import { getActiveProduct } from '@/lib/product';
 
 export const metadata: Metadata = { title: 'Privacy' };
 
@@ -8,10 +8,11 @@ export const metadata: Metadata = { title: 'Privacy' };
  * TEMPLATE. Describes what this pre-order site does today. It has not been
  * reviewed by a lawyer. Check each statement against your Stripe and hosting
  * settings, and have it reviewed, before taking payments. It must be rewritten
- * when the audit itself launches and starts storing answers.
+ * when the product itself launches and starts storing answers.
  */
 export default function PrivacyPage() {
   const config = getConfig();
+  const site = getActiveProduct();
   const contact = <a href={`mailto:${config.supportEmail}`}>{config.supportEmail}</a>;
 
   return (
@@ -33,8 +34,9 @@ export default function PrivacyPage() {
             payment record in our Stripe account.
           </li>
           <li>
-            <strong>Your email address.</strong> We use it to deliver your access link,
-            to tell you about anything affecting your order, and to refund you.
+            <strong>Your email address.</strong> We use it to deliver your{' '}
+            {site.deliverable}, to tell you about anything affecting your order, and to
+            refund you.
           </li>
           <li>
             <strong>Basic visit statistics.</strong> We count page views using our
@@ -65,12 +67,8 @@ export default function PrivacyPage() {
           We keep payment records for as long as tax and accounting rules require.
         </p>
 
-        <h2>When the audit launches</h2>
-        <p>
-          The audit will store the answers you and your partner give. We will publish
-          exactly how those are stored and for how long before it launches. If you do
-          not like what you read, you can have a full refund.
-        </p>
+        <h2>{site.legal.privacyAtLaunch.heading}</h2>
+        <p>{site.legal.privacyAtLaunch.body}</p>
       </div>
     </article>
   );

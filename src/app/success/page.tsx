@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getConfig } from '@/lib/env';
 import { formatCalendarDate } from '@/lib/format';
 import { errorMessage, log } from '@/lib/logger';
-import { site } from '@/lib/site';
+import { getActiveProduct } from '@/lib/product';
 import { getStripe } from '@/lib/stripe';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +42,7 @@ export default async function SuccessPage({
   const raw = (await searchParams).session_id;
   const outcome = await lookUp(typeof raw === 'string' ? raw : undefined);
   const { shipByDate, supportEmail } = getConfig();
+  const site = getActiveProduct();
   const shipBy = formatCalendarDate(shipByDate);
   const contact = <a href={`mailto:${supportEmail}`}>{supportEmail}</a>;
 
@@ -56,7 +57,7 @@ export default async function SuccessPage({
               receipt.
             </p>
             <p>
-              Your access link will arrive by email on or before{' '}
+              Your {site.deliverable} will arrive by email on or before{' '}
               <strong>{shipBy}</strong>. If we miss that date, you will be refunded in
               full without having to ask.
             </p>

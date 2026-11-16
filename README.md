@@ -1,13 +1,13 @@
-# The Chore Audit: pre-sell site
+# Pre-sell site: The Chore Audit and Anime Starter Pack
 
-Milestone 1 of The Chore Audit. A landing page that takes real pre-orders
-through Stripe Checkout, so demand is measured with money before the product is
-built.
+A landing page that takes real pre-orders through Stripe Checkout, so demand is
+measured with money before a product is built. One codebase, one product per
+deployment: the `PRODUCT` variable chooses which. See [Products](#products).
 
 **What this is:** landing page, Stripe Checkout, signed webhook, legal page
 templates, tests, CI.
-**What this is not:** the audit itself. Nothing here delivers the product. See
-[Roadmap](#roadmap).
+**What this is not:** either product itself. Nothing here delivers anything.
+See [Roadmap](#roadmap).
 
 - Architecture and the reasons behind each decision: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Operating it (launch checklist, refunds, the launch gate, incidents): [docs/RUNBOOK.md](docs/RUNBOOK.md)
@@ -26,6 +26,26 @@ templates, tests, CI.
 Runtime dependencies are `next`, `react`, `react-dom`, `stripe` and
 `@vercel/analytics`. There is no database, no CSS framework and no client-side
 state.
+
+## Products
+
+| `PRODUCT` | Name | Default price | Stripe metadata tag |
+| --- | --- | --- | --- |
+| `chore-audit` (default) | The Chore Audit | `1900` | `product=chore-audit-preorder` |
+| `anime-starter-pack` | Anime Starter Pack | `900` | `product=anime-starter-pack-preorder` |
+
+Each product is a folder under `src/products/` holding its facts
+(`product.ts`) and its landing page (`home.tsx`). Checkout, the webhook, the
+pre-order terms, the legal templates and every safety rule are shared, so a fix
+lands once. A deployment with `PRODUCT` unset sells The Chore Audit exactly as
+before.
+
+To add a product: add its key to `PRODUCT_KEYS` in `src/products/types.ts`,
+then follow the compile errors. The registry and the page map are exhaustive
+by type. `tests/products.test.ts` then covers the new product without edits.
+
+Both names are working names. No trademark or domain search has been done on
+either.
 
 ## Run it locally
 
@@ -61,14 +81,15 @@ descriptions.
 | `SHIP_BY_DATE` | yes | | Delivery promise shown to buyers. Sales close after it |
 | `SUPPORT_EMAIL` | yes | | Shown on every page and in the terms |
 | `LEGAL_ENTITY_NAME` | yes | | The seller named in the terms |
-| `PRICE_CENTS` | no | `1900` | Price shown and charged |
+| `PRODUCT` | no | `chore-audit` | Which product this deployment sells |
+| `PRICE_CENTS` | no | the product's default | Price shown and charged |
 | `PRICE_CURRENCY` | no | `usd` | One of usd, eur, gbp, cad, aud |
 | `PREORDERS_OPEN` | no | `true` | Kill switch |
 | `STRIPE_AUTOMATIC_TAX` | no | `false` | Needs Stripe Tax set up first |
 | `STRIPE_SECRET_KEY` | at runtime | | Secret or restricted key |
 | `STRIPE_WEBHOOK_SECRET` | at runtime | | Webhook signing secret |
 
-The first eight are read at build time, because the pages are static. Changing
+The first nine are read at build time, because the pages are static. Changing
 one needs a redeploy. The two Stripe secrets are read per request and are never
 needed to build.
 
@@ -120,16 +141,28 @@ Read these before launch. None is hidden behind a passing test.
   `minimatch`, reached through `eslint-config-next`'s `typescript-eslint`. They
   are in lint tooling, not in anything deployed. `npm audit --omit=dev` is the
   check CI enforces.
-- **The product name is a working name.** No trademark or domain search has
+- **Both product names are working names.** No trademark or domain search has
   been done.
+- **Products sharing one Stripe account see each other's webhook events.**
+  Stripe sends an account's events to every endpoint. Log records carry a
+  `product` field for filtering; count pre-orders by Stripe metadata, not by
+  log lines.
+- **Anime Starter Pack is sold to any country Stripe Checkout accepts.** Tax on
+  digital goods differs by US state and by country, and this code does not
+  restrict where buyers are. Decide on tax, and on any country restriction in
+  the Stripe account, before sending traffic.
 - **No end-to-end browser test.** Add one (Playwright) when the audit flow
   exists and there is something stateful to protect.
 
 ## Roadmap
 
-1. **Milestone 1, this repo:** pre-sell and measure. Exit criteria are in the
-   runbook under "The launch gate".
-2. **Milestone 2, only if the gate passes:** the audit. Adds a database, the
-   two-partner flow, the gap report, the agreement and the calendar file. The
-   webhook becomes the fulfilment trigger; ARCHITECTURE.md lists what must
-   change when it does.
+1. **Milestone 1, this repo:** pre-sell and measure, per product. Exit criteria
+   are in the runbook under "The launch gate".
+2. **Milestone 2, only for a product whose gate passes:**
+   - *The Chore Audit:* a database, the two-partner flow, the gap report, the
+     agreement and the calendar file.
+   - *Anime Starter Pack:* a database, a hand-checked catalogue of titles, the
+     taste quiz, the matching rule and the pack page.
+
+   In both, the webhook becomes the fulfilment trigger; ARCHITECTURE.md lists
+   what must change when it does.
