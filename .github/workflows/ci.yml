@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Non-secret placeholders. The build renders static pages from these;
+      # no Stripe credentials are needed to build or test.
+      APP_URL: https://ci.example.com
+      SHIP_BY_DATE: '2099-01-31'
+      SUPPORT_EMAIL: ci@example.com
+      LEGAL_ENTITY_NAME: CI Placeholder
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # Fails on high or critical advisories in what actually ships.
+      - run: npm audit --omit=dev --audit-level=high
