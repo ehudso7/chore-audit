@@ -26,6 +26,7 @@ export function GET(): Response {
     return Response.json(
       {
         status: 'ok',
+        product: config.productKey,
         preordersAvailable: preordersAvailable(config, new Date()),
         stripeMode,
       },

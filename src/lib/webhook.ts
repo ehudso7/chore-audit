@@ -7,6 +7,18 @@ export interface EventRecord {
 }
 
 /**
+ * The product tag buildCheckoutParams() put in the session metadata.
+ *
+ * Stripe delivers an account's events to every endpoint subscribed to them, so
+ * when several products share one Stripe account each deployment logs the
+ * others' payments too. Filter on this field; never assume an event belongs to
+ * the product this deployment sells.
+ */
+function productOf(session: Stripe.Checkout.Session): string | null {
+  return session.metadata?.product ?? null;
+}
+
+/**
  * Turns a verified Stripe event into the log record we keep for it.
  *
  * In this milestone Stripe is the system of record and the webhook has no side
@@ -30,6 +42,7 @@ export function describeEvent(event: Stripe.Event): EventRecord {
         fields: {
           ...base,
           sessionId: session.id,
+          product: productOf(session),
           amountTotal: session.amount_total,
           currency: session.currency,
         },
@@ -43,16 +56,18 @@ export function describeEvent(event: Stripe.Event): EventRecord {
         fields: {
           ...base,
           sessionId: session.id,
+          product: productOf(session),
           amountTotal: session.amount_total,
           currency: session.currency,
         },
       };
     }
     case 'checkout.session.async_payment_failed': {
+      const session = event.data.object;
       return {
         level: 'warn',
         event: 'preorder.payment_failed',
-        fields: { ...base, sessionId: event.data.object.id },
+        fields: { ...base, sessionId: session.id, product: productOf(session) },
       };
     }
     case 'charge.refunded': {

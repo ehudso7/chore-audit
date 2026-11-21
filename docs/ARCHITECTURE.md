@@ -2,8 +2,8 @@
 
 ## Purpose of this milestone
 
-Answer one question cheaply: will strangers pay for The Chore Audit? Everything
-here serves taking a real pre-order safely and counting it. Anything that only
+Answer one question cheaply, once per product: will strangers pay for it?
+Everything here serves taking a real pre-order safely and counting it. Anything that only
 matters once the product exists is deferred, and each deferral is written down
 below with the trigger for revisiting it.
 
@@ -140,6 +140,35 @@ wins.
 
 *Revisit when:* `eslint-config-next` ships a `typescript-eslint` that supports 7.
 
+### 14. One codebase, one product per deployment
+
+`PRODUCT` selects what a deployment sells. Each product is a folder under
+`src/products/` with a typed `ProductDefinition` and its own home page
+component. Everything with a rule in it (configuration, checkout, the webhook,
+the pre-order terms, the legal templates) is shared.
+
+The alternative was a copy of the repository per product. That duplicates the
+payment and webhook code, and a security fix then has to be made in every copy.
+A single deployment serving several products by hostname was also rejected: it
+would make every page dynamic and put two products' failures on one deployment.
+
+Landing copy is not forced into a shared schema. The two pages make different
+arguments (one cites survey data, the other answers "why not a free list?"),
+and an abstraction drawn from two examples would fit neither the third time.
+Shared wording is limited to what must stay identical: the buy form and the
+five pre-order promises.
+
+*Guarantee kept:* with `PRODUCT` unset the app renders The Chore Audit, and its
+pages are text-identical to the single-product version this replaced.
+
+*Consequence:* products that share a Stripe account receive each other's
+webhook events. Session log records carry `product` from the session metadata.
+Count pre-orders by Stripe metadata, never by log lines.
+
+*Revisit when:* a product reaches milestone 2. Fulfilment code is not shared
+by nature, and a product with a database may be better served by its own
+repository that keeps this one as its pre-sell front.
+
 ## Module map
 
 | Module | Responsibility |
@@ -152,7 +181,13 @@ wins.
 | `lib/rate-limit.ts` | Fixed-window limiter |
 | `lib/logger.ts` | JSON logging |
 | `lib/format.ts` | Price and date formatting |
-| `lib/site.ts` | Copy, and the sources behind each statistic |
+| `lib/product.ts` | The product this deployment sells |
+| `products/types.ts` | Product keys, `ProductDefinition`, home page props |
+| `products/registry.ts` | Every product, exhaustive by type |
+| `products/home-pages.tsx` | Each product's landing page, exhaustive by type |
+| `products/<key>/product.ts` | A product's facts and copy, with the sources behind any statistic |
+| `products/<key>/home.tsx` | A product's landing page |
+| `components/preorder-terms.tsx` | The five pre-order promises, shared by every product |
 
 Route handlers contain only orchestration. Anything with a rule in it lives in
 `lib/` and is tested there.
@@ -165,6 +200,7 @@ Route handlers contain only orchestration. Anything with a rule in it lives in
 | Formatting, origin check, limiter, checkout request | `tests/lib.test.ts` |
 | Webhook signature handling and event mapping | `tests/webhook.test.ts`, using Stripe's own test-signature helper |
 | Checkout route: every branch | `tests/checkout-route.test.ts`, Stripe client mocked |
+| Product registry, each landing page's markup, per-product checkout request | `tests/products.test.ts`, pages rendered to static markup |
 
 Not covered: a real payment, and rendering in a browser. Both are manual steps
 in the launch checklist.

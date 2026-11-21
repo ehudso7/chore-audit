@@ -1,6 +1,7 @@
 # Runbook
 
-How to launch, measure, operate and shut down the pre-sell.
+How to launch, measure, operate and shut down a pre-sell. Each product is its
+own deployment, so run the checklist once per product.
 
 ## Launch checklist
 
@@ -10,12 +11,16 @@ Do these in order. Do not skip the test payment.
 
 - [ ] **Ship-by date.** You are promising delivery by this date and refunding
       everyone if you miss it. Pick one you can keep.
-- [ ] **Price.** `1900` cents is an untested assumption.
+- [ ] **Price.** Each product's default (`1900` cents for The Chore Audit, `900`
+      for Anime Starter Pack) is an untested assumption.
 - [ ] **Refund terms.** The template promises refunds before delivery and for 14
       days after. Change `src/app/legal/refunds/page.tsx` if you want different.
 - [ ] **Legal review** of the three pages under `src/app/legal/`.
 - [ ] **Sales tax.** Decide whether to enable Stripe Tax.
 - [ ] **Name.** Run a trademark and domain search on the working name.
+- [ ] **Where you sell.** Nothing in this code restricts buyers by country.
+      If you want to sell in one country only, set that up in the Stripe
+      account and confirm how before relying on it.
 
 ### Stripe
 
@@ -36,7 +41,11 @@ Do these in order. Do not skip the test payment.
 
 ### Hosting (Vercel)
 
-- [ ] Project created from the repository. No build settings to change.
+- [ ] Project created from the repository. No build settings to change. One
+      Vercel project per product, all pointing at the same repository.
+- [ ] `PRODUCT` set for **Production** and **Preview** (`chore-audit` or
+      `anime-starter-pack`). An unknown value fails the build with the list of
+      valid keys.
 - [ ] Environment variables set for **Production** from `.env.example`.
       Use test-mode Stripe values for **Preview**, with `APP_URL` set to the
       preview's own origin.
@@ -48,7 +57,9 @@ Do these in order. Do not skip the test payment.
 
 ### Verify before sending traffic
 
-- [ ] `GET /api/health` returns `{"status":"ok","preordersAvailable":true,"stripeMode":"live"}`.
+- [ ] `GET /api/health` returns `{"status":"ok","product":"<your PRODUCT>","preordersAvailable":true,"stripeMode":"live"}`.
+      Check `product` especially: it is the proof the deployment sells what you
+      think it does.
 - [ ] One **test-mode** payment on a preview deployment, end to end.
 - [ ] One **live** payment with your own card: receipt arrives, `/success`
       confirms, `preorder.paid` appears in the logs, the webhook shows as
@@ -65,13 +76,18 @@ results.
 | Measure | Where it comes from |
 | --- | --- |
 | Visitors | Vercel Web Analytics, unique visitors to `/` |
-| Pre-orders | Stripe Dashboard, payments with metadata `product=chore-audit-preorder`, net of refunds |
+| Pre-orders | Stripe Dashboard, payments with the product's metadata tag (`product=chore-audit-preorder` or `product=anime-starter-pack-preorder`), net of refunds |
 | Conversion | Pre-orders divided by visitors |
 | Cost per pre-order | Ad spend divided by pre-orders |
 
-**Proposed gate:** send about 500 visitors who match the target buyer. Build
-the product if at least 2% pre-order (10 of 500) and the cost per pre-order is
-below the price.
+**Proposed gate, The Chore Audit:** send about 500 visitors who match the
+target buyer. Build the product if at least 2% pre-order (10 of 500) and the
+cost per pre-order is below the price.
+
+**Proposed gate, Anime Starter Pack:** 10 paid pre-orders from strangers within
+14 days of the page going live. Count nobody you know. Paid traffic is not
+expected to pay back at a 900-cent price, so this gate has no cost-per-order
+test: the traffic is meant to be organic.
 
 These thresholds are a starting proposal, not an industry benchmark. With 500
 visitors the result is noisy: 10 pre-orders is consistent with a true rate of
@@ -92,8 +108,9 @@ Stripe's refund email. `preorder.refunded` appears in the logs.
 
 Email buyers first so the refund is not a surprise. Then refund each payment
 from the Dashboard, or for more than a handful, script it against the Stripe
-API: find the payments by the `product=chore-audit-preorder` metadata, then
-create a refund for each. No such script is included here. Write it when it is
+API: find the payments by that product's metadata tag, then create a refund
+for each. Refund one product's buyers only; another product may share the
+account. No such script is included here. Write it when it is
 needed and run it in test mode first.
 
 ### Stop taking pre-orders
@@ -125,7 +142,7 @@ Search the host's logs by `event`.
 | `checkout.rate_limited` | warn | One address over 10 attempts a minute | Check for abuse |
 | `checkout.session_failed` | error | Stripe refused or was unreachable | See incidents |
 | `checkout.misconfigured` | error | Bad environment variable | Fix and redeploy |
-| `preorder.paid` | info | Money received | None |
+| `preorder.paid` | info | Money received. `product` says for which product | None |
 | `preorder.awaiting_payment` | info | Delayed payment method started | None |
 | `preorder.payment_failed` | warn | Delayed payment failed | None; the buyer was not charged |
 | `preorder.refunded` | info | Refund issued | None |
@@ -134,6 +151,11 @@ Search the host's logs by `event`.
 | `webhook.misconfigured` | error | Signing secret missing | Fix and redeploy; Stripe retries |
 | `success.lookup_failed` | warn | Could not confirm a session | Check Stripe status |
 | `health.misconfigured` | error | Health check found a bad setting | Fix and redeploy |
+
+Session events (`preorder.paid`, `preorder.awaiting_payment`,
+`preorder.payment_failed`) carry a `product` field. If two products share a
+Stripe account, each deployment logs both products' events, because Stripe
+sends an account's events to every endpoint. Filter on `product`.
 
 ## Incidents
 

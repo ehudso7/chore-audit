@@ -11,6 +11,9 @@
  * deployment fails once with the full list instead of one variable at a time.
  */
 
+import { getProduct } from '@/products/registry';
+import { DEFAULT_PRODUCT_KEY, PRODUCT_KEYS, type ProductKey } from '@/products/types';
+
 export class ConfigError extends Error {
   constructor(public readonly problems: readonly string[]) {
     super(`Invalid configuration:\n - ${problems.join('\n - ')}`);
@@ -23,6 +26,8 @@ export const SUPPORTED_CURRENCIES = ['usd', 'eur', 'gbp', 'cad', 'aud'] as const
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 
 export interface AppConfig {
+  /** Which product this deployment sells. One product per deployment. */
+  readonly productKey: ProductKey;
   /** Canonical origin, no trailing slash, e.g. https://example.com */
   readonly appUrl: string;
   readonly priceCents: number;
@@ -86,8 +91,19 @@ function parseAppUrl(env: Env, problems: string[]): string {
   return url.origin;
 }
 
-function parsePriceCents(env: Env, problems: string[]): number {
-  const raw = read(env, 'PRICE_CENTS') ?? '1900';
+function parseProductKey(env: Env, problems: string[]): ProductKey {
+  const raw = read(env, 'PRODUCT');
+  if (raw === undefined) return DEFAULT_PRODUCT_KEY;
+  const match = PRODUCT_KEYS.find((key) => key === raw);
+  if (match === undefined) {
+    problems.push(`PRODUCT must be one of: ${PRODUCT_KEYS.join(', ')}`);
+    return DEFAULT_PRODUCT_KEY;
+  }
+  return match;
+}
+
+function parsePriceCents(env: Env, problems: string[], fallbackCents: number): number {
+  const raw = read(env, 'PRICE_CENTS') ?? String(fallbackCents);
   if (!/^\d+$/.test(raw)) {
     problems.push('PRICE_CENTS must be a whole number of cents');
     return 0;
@@ -153,9 +169,11 @@ function parseLegalEntityName(env: Env, problems: string[]): string {
 /** Pure parser. Exported for tests; application code should call getConfig(). */
 export function parseConfig(env: Env): AppConfig {
   const problems: string[] = [];
+  const productKey = parseProductKey(env, problems);
   const config: AppConfig = {
+    productKey,
     appUrl: parseAppUrl(env, problems),
-    priceCents: parsePriceCents(env, problems),
+    priceCents: parsePriceCents(env, problems, getProduct(productKey).defaultPriceCents),
     currency: parseCurrency(env, problems),
     shipByDate: parseShipByDate(env, problems),
     preordersOpen: parseBoolean(env, 'PREORDERS_OPEN', true, problems),

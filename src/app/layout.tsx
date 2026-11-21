@@ -2,11 +2,12 @@ import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import { Analytics } from '@vercel/analytics/next';
 import { getConfig } from '@/lib/env';
-import { site } from '@/lib/site';
+import { getActiveProduct } from '@/lib/product';
 import './globals.css';
 
 export function generateMetadata(): Metadata {
   const { appUrl } = getConfig();
+  const site = getActiveProduct();
   return {
     metadataBase: new URL(appUrl),
     title: { default: `${site.name}: ${site.tagline}`, template: `%s | ${site.name}` },
@@ -34,6 +35,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { legalEntityName, supportEmail } = getConfig();
+  const site = getActiveProduct();
   return (
     <html lang="en">
       <body>
@@ -57,8 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href={`mailto:${supportEmail}`}>Contact</a>
             </nav>
             <p>
-              © {new Date().getUTCFullYear()} {legalEntityName}. {site.name} is a
-              practical tool for dividing housework. It is not counselling or therapy.
+              © {new Date().getUTCFullYear()} {legalEntityName}. {site.footerNote}
             </p>
           </div>
         </footer>

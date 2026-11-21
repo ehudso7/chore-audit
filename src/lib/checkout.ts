@@ -1,7 +1,7 @@
 import type Stripe from 'stripe';
 import type { AppConfig } from './env';
 import { formatCalendarDate } from './format';
-import { site } from './site';
+import { getProduct } from '@/products/registry';
 
 /**
  * Builds the Checkout Session request. Pure, so the exact request sent to
@@ -14,10 +14,11 @@ import { site } from './site';
 export function buildCheckoutParams(
   config: AppConfig,
 ): Stripe.Checkout.SessionCreateParams {
+  const product = getProduct(config.productKey);
   const shipBy = formatCalendarDate(config.shipByDate);
   const promise = `Delivered by ${shipBy} or refunded in full.`;
   const metadata = {
-    product: site.stripeProductKey,
+    product: product.stripeProductKey,
     ship_by: config.shipByDate,
   };
 
@@ -30,8 +31,8 @@ export function buildCheckoutParams(
           currency: config.currency,
           unit_amount: config.priceCents,
           product_data: {
-            name: `${site.name} (pre-order)`,
-            description: `One-time purchase for one household. ${promise}`,
+            name: `${product.name} (pre-order)`,
+            description: `${product.checkoutSummary} ${promise}`,
           },
         },
       },
@@ -43,12 +44,12 @@ export function buildCheckoutParams(
     automatic_tax: { enabled: config.automaticTax },
     custom_text: {
       submit: {
-        message: `This is a pre-order. ${site.name} is not available yet. ${promise}`,
+        message: `This is a pre-order. ${product.name} is not available yet. ${promise}`,
       },
     },
     metadata,
     payment_intent_data: {
-      description: `${site.name} pre-order`,
+      description: `${product.name} pre-order`,
       metadata,
     },
   };

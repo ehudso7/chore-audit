@@ -1,4 +1,4 @@
-import { exampleGap } from '@/lib/site';
+import { exampleGap } from './product';
 
 /** A static illustration of the gap report. Clearly labelled as an example. */
 export function GapExample() {

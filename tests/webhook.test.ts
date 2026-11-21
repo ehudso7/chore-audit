@@ -146,6 +146,16 @@ describe('describeEvent', () => {
     });
   });
 
+  it('tags session events with the product, so shared-account logs can be filtered', () => {
+    const tagged = { ...paidSession, metadata: { product: 'anime-starter-pack-preorder' } };
+    expect(describeEvent(parse('checkout.session.completed', tagged))).toMatchObject({
+      fields: { product: 'anime-starter-pack-preorder' },
+    });
+    expect(
+      describeEvent(parse('checkout.session.completed', { ...paidSession, metadata: null })),
+    ).toMatchObject({ fields: { product: null } });
+  });
+
   it('ignores event types it does not handle', () => {
     expect(describeEvent(parse('customer.created', { id: 'cus_1' }))).toMatchObject({
       event: 'stripe.event_ignored',

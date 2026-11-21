@@ -1,18 +1,35 @@
+import type { ProductDefinition } from '../types';
+
 /**
- * Product copy and constants that are not environment-specific.
- *
  * "The Chore Audit" is a working name. No trademark or domain search has been
  * done; do both before spending on marketing.
  */
-
-export const site = {
+export const choreAudit: ProductDefinition = {
+  key: 'chore-audit',
   name: 'The Chore Audit',
   tagline: 'Stop arguing about whose turn it is.',
   description:
     'A 10-minute exercise for two. See where you and your partner disagree about who does what at home, then give every chore one owner and a clear definition of done.',
-  /** Recorded on the Stripe payment so pre-orders are easy to filter. */
   stripeProductKey: 'chore-audit-preorder',
-} as const;
+  defaultPriceCents: 1900,
+  purchaseUnit: 'household',
+  checkoutSummary: 'One-time purchase for one household.',
+  deliverable: 'access link',
+  footerNote:
+    'The Chore Audit is a practical tool for dividing housework. It is not counselling or therapy.',
+  legal: {
+    whatYouAreBuying:
+      'a web-based exercise for one household of two partners, with a gap report, a printable household agreement and a calendar file of reminders',
+    usingIt:
+      'Your purchase is for personal use by you and your partner. Please do not resell it or share access outside your household.',
+    whatItIsNot:
+      'a practical tool for dividing housework. It is not counselling, therapy, or legal or financial advice, and it does not promise any particular result in your relationship.',
+    privacyAtLaunch: {
+      heading: 'When the audit launches',
+      body: 'The audit will store the answers you and your partner give. We will publish exactly how those are stored and for how long before it launches. If you do not like what you read, you can have a full refund.',
+    },
+  },
+};
 
 /**
  * Sources for every statistic shown on the landing page. Figures were checked

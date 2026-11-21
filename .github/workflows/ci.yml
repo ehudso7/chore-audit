@@ -16,7 +16,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every product must build. Tests cover all products in either leg.
+        product: [chore-audit, anime-starter-pack]
     env:
+      PRODUCT: ${{ matrix.product }}
       # Non-secret placeholders. The build renders static pages from these;
       # no Stripe credentials are needed to build or test.
       APP_URL: https://ci.example.com

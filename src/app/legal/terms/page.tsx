@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getConfig } from '@/lib/env';
 import { formatCalendarDate, formatPrice } from '@/lib/format';
-import { site } from '@/lib/site';
+import { getActiveProduct } from '@/lib/product';
 
 export const metadata: Metadata = { title: 'Terms of sale' };
 
@@ -13,6 +13,7 @@ export const metadata: Metadata = { title: 'Terms of sale' };
  */
 export default function TermsPage() {
   const config = getConfig();
+  const site = getActiveProduct();
   const shipBy = formatCalendarDate(config.shipByDate);
   const price = formatPrice(config.priceCents, config.currency);
 
@@ -29,16 +30,15 @@ export default function TermsPage() {
 
         <h2>What you are buying</h2>
         <p>
-          A pre-order of {site.name}: a web-based exercise for one household of two
-          partners, with a gap report, a printable household agreement and a calendar
-          file of reminders. The price is {price}, paid once. There is no subscription.
-          Any taxes that apply are shown at checkout.
+          A pre-order of {site.name}: {site.legal.whatYouAreBuying}. The price is{' '}
+          {price}, paid once. There is no subscription. Any taxes that apply are shown
+          at checkout.
         </p>
 
         <h2>This is a pre-order</h2>
         <p>
-          {site.name} is not available yet. We will email your access link on or before{' '}
-          {shipBy}. If we do not deliver by that date, or if we decide not to build it,
+          {site.name} is not available yet. We will email your {site.deliverable} on or
+          before {shipBy}. If we do not deliver by that date, or if we decide not to build it,
           we will refund your payment in full without you having to ask.
         </p>
 
@@ -50,15 +50,12 @@ export default function TermsPage() {
 
         <h2>Using it</h2>
         <p>
-          Your purchase is for personal use by you and your partner. Please do not
-          resell it or share access outside your household.
+          {site.legal.usingIt}
         </p>
 
         <h2>What it is not</h2>
         <p>
-          {site.name} is a practical tool for dividing housework. It is not counselling,
-          therapy, or legal or financial advice, and it does not promise any particular
-          result in your relationship.
+          {site.name} is {site.legal.whatItIsNot}
         </p>
 
         <h2>If something goes wrong</h2>
